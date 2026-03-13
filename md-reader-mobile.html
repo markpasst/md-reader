@@ -428,6 +428,10 @@ input[type=range]::-webkit-slider-thumb {
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
 
 /* ─── MOBILE (iPhone 14 Plus: 430×932 pt) ─── */
+/* dvh = dynamic viewport height (iOS 15.4+): esclude la barra indirizzi dinamica */
+@supports (height: 100dvh) {
+  html, body { height: 100dvh !important; min-height: 100dvh !important; }
+}
 html { height: -webkit-fill-available; }
 body { min-height: -webkit-fill-available; }
 
@@ -532,6 +536,15 @@ body { min-height: -webkit-fill-available; }
 /* Stage: padding per progress bar e safe area */
 #reader-stage {
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Fix scroll-mode su mobile: lo stage deve poter crescere */
+#reader-stage.scroll-mode {
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+  /* altezza esplicita calcolata via JS, vedi setLayout */
+  flex: 1;
+  height: 0; /* trucco flex: forza lo stage a usare lo spazio rimanente */
 }
 
 /* Open btn più grande */
@@ -860,7 +873,7 @@ function renderBook(h, w) {
 function renderScroll(w) {
   bc.className = '';
   const all = pages.join('');
-  bc.innerHTML = `<div class="book-page single-page" style="width:${w}px;min-height:400px">
+  bc.innerHTML = `<div class="book-page single-page" style="width:${w}px;height:auto;min-height:100px">
     <div class="page-texture"></div>
     <div class="binding-shadow"></div><div class="edge-shadow"></div>
     <div class="page-inner" style="height:auto;padding-bottom:64px">
@@ -931,16 +944,26 @@ function updateProgress() {
 // LAYOUT
 function setLayout(l) {
   layout = l;
-  ['single','book','scroll'].forEach(x => document.getElementById('lp-'+x).classList.toggle('active', x===l));
+  ['single','scroll'].forEach(x => {
+    const el = document.getElementById('lp-'+x);
+    if (el) el.classList.toggle('active', x===l);
+  });
 
   if (l === 'scroll') {
     stage.classList.add('scroll-mode');
+    // fix mobile: imposta altezza esplicita basata su viewport reale
+    const topbarH = document.getElementById('topbar').offsetHeight;
+    const vh = window.innerHeight;
+    stage.style.height = (vh - topbarH) + 'px';
+    stage.style.overflow = 'auto';
     stage.onscroll = function() {
       const pct = stage.scrollTop / Math.max(stage.scrollHeight - stage.clientHeight, 1) * 100;
       document.getElementById('progress-fill').style.width = pct.toFixed(1)+'%';
     };
   } else {
     stage.classList.remove('scroll-mode');
+    stage.style.height = '';
+    stage.style.overflow = '';
     stage.onscroll = null;
   }
 
@@ -1252,7 +1275,13 @@ function saveAnnotations() {
 let resizeT;
 window.addEventListener('resize', () => {
   clearTimeout(resizeT);
-  resizeT = setTimeout(() => { if (cachedHTML && layout !== 'scroll') rebuild(); }, 280);
+  resizeT = setTimeout(() => {
+    if (layout === 'scroll') {
+      const topbarH = document.getElementById('topbar').offsetHeight;
+      stage.style.height = (window.innerHeight - topbarH) + 'px';
+    }
+    if (cachedHTML && layout !== 'scroll') rebuild();
+  }, 280);
 });
 
 // INIT
