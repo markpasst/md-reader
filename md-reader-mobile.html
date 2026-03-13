@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>MD Reader · Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0e0e10;
+  --surface: #18181c;
+  --surface2: #222228;
+  --surface3: #2a2a32;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f0eee8;
+  --text2: #b8b5ae;
+  --muted: #888780;
+  --accent: #5DCAA5;
+  --accent-dim: rgba(93,202,165,0.10);
+  --accent-dark: #1D9E75;
+  --amber: #EF9F27;
+  --mono: 'JetBrains Mono', monospace;
+  --reader-font: 'Lora', Georgia, serif;
+  --reader-size: 17px;
+  --reader-weight: 400;
+  --reader-lh: 1.75;
+}
+
+/* LIGHT THEME */
+body.light {
+  --bg: #f0ede6;
+  --surface: #e8e4dc;
+  --surface2: #dedad2;
+  --surface3: #ccc8bf;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1a18;
+  --text2: #4a4840;
+  --muted: #7a7870;
+  --accent: #0e8a68;
+  --accent-dim: rgba(93,202,165,0.15);
+  --accent-dark: #0a6b50;
+  --amber: #b56a00;
+}
+body.light #reader-stage {
+  background:
+    radial-gradient(ellipse at 50% 110%, rgba(200,190,170,0.5) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 20%, rgba(93,202,165,0.04) 0%, transparent 50%),
+    linear-gradient(175deg, #e8e4dc 0%, #ece8e0 45%, #e4e0d8 100%);
+}
+body.light .book-page.single-page {
+  box-shadow: -6px 0 18px rgba(0,0,0,0.12), 8px 0 24px rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.18);
+}
+body.light .book-open .book-page.left-page  { box-shadow: -6px 0 20px rgba(0,0,0,0.14), -1px 0 4px rgba(0,0,0,0.1); }
+body.light .book-open .book-page.right-page { box-shadow: 6px 0 20px rgba(0,0,0,0.14), 1px 0 4px rgba(0,0,0,0.1); }
+body.light .book-page .binding-shadow { background: linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 55%, transparent 100%); }
+body.light .book-page .gutter-shadow  { background: linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.04) 60%, transparent 100%); }
+body.light .book-page .edge-shadow    { background: linear-gradient(to left,  rgba(0,0,0,0.1) 0%, transparent 100%); }
+body.light #book-spine { background: linear-gradient(to right, #c8c0b0 0%, #dedad0 30%, #e8e4da 50%, #dedad0 70%, #c8c0b0 100%); }
+body.light .page-number { color: rgba(0,0,0,0.22); }
+body.light .reader-text h1 { color: #0e0e0c; border-bottom-color: rgba(0,0,0,0.1); }
+body.light .reader-text h2 { color: #1e1c18; }
+body.light .reader-text strong { color: #0a0a08; }
+body.light .reader-text em { color: #2a5a4a; }
+body.light .reader-text blockquote { background: rgba(14,138,104,0.06); border-left-color: var(--accent-dark); color: #3a3830; }
+body.light .reader-text code { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); color: #8a5a00; }
+body.light .reader-text pre { background: #ede9e0; border-color: rgba(0,0,0,0.1); }
+body.light .reader-text pre code { color: #0a6b50; }
+body.light .reader-text td { color: #3a3830; border-bottom-color: rgba(0,0,0,0.08); }
+body.light .reader-text th { background: #e4e0d8; color: var(--accent-dark); border-bottom-color: rgba(0,0,0,0.12); }
+body.light .reader-text li::marker { color: var(--accent-dark); }
+body.light .reader-text hr { background: rgba(0,0,0,0.1); }
+body.light #turn-overlay .leaf-face.front,
+body.light #turn-overlay .leaf-face.back { background: #faf8f3; }
+body.light .nav-arrow { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.3); }
+body.light .nav-arrow:hover { background: var(--accent-dim); border-color: var(--accent-dark); color: var(--accent-dark); }
+body.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+body.light #annot-textarea { color: #3a3830; }
+body.light #annot-textarea::placeholder { color: #aaa8a0; }
+
+/* THEME TOGGLE BUTTON */
+#btn-theme { font-size: 13px; }
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: 'Source Sans 3', sans-serif; color: var(--text); display: flex; flex-direction: column; }
+
+/* TOPBAR */
+#topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 14px; height: 46px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 200;
+}
+.tb-logo { font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: 0.4px; margin-right: 2px; white-space: nowrap; }
+#file-title { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tb-sep { width: 1px; height: 18px; background: var(--border2); flex-shrink: 0; }
+#wc-badge { font-size: 11px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+
+.icon-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: none; border: 1px solid transparent;
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--surface2); border-color: var(--border2); color: var(--text); }
+.icon-btn.active { background: var(--accent-dim); border-color: var(--accent-dark); color: var(--accent); }
+.icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+#open-btn {
+  padding: 0 12px; height: 28px; border-radius: 6px;
+  background: var(--accent-dark); border: 1px solid var(--accent);
+  color: white; font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s;
+}
+#open-btn:hover { background: var(--accent); }
+#file-input-hidden { display: none; }
+
+.layout-pills { display: flex; gap: 3px; }
+.layout-pill {
+  padding: 4px 9px; border-radius: 5px; border: 1px solid var(--border2);
+  background: none; color: var(--muted); font-size: 11px; cursor: pointer;
+  font-family: inherit; transition: all 0.15s; white-space: nowrap;
+}
+.layout-pill:hover { border-color: var(--accent-dark); color: var(--text); }
+.layout-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* MAIN */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* SETTINGS PANEL */
+#settings-panel {
+  width: 228px; background: var(--surface); border-right: 1px solid var(--border);
+  overflow-y: auto; flex-shrink: 0; transition: width 0.22s ease, opacity 0.18s;
+}
+#settings-panel.hidden { width: 0; opacity: 0; overflow: hidden; }
+.sp-section { padding: 14px; border-bottom: 1px solid var(--border); }
+.sp-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted); margin-bottom: 10px; }
+.font-pills { display: flex; flex-direction: column; gap: 5px; }
+.font-pill {
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text2); font-size: 13px;
+  cursor: pointer; transition: all 0.15s; text-align: left;
+}
+.font-pill:hover { border-color: var(--accent-dark); color: var(--text); }
+.font-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.font-pill small { font-size: 10px; color: var(--muted); display: block; margin-top: 1px; }
+.slider-row { margin-bottom: 12px; }
+.slider-row:last-child { margin-bottom: 0; }
+.slider-meta { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.slider-name { font-size: 12px; color: var(--text2); }
+.slider-val { font-size: 11px; color: var(--accent); font-family: var(--mono); }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 3px;
+  background: var(--surface3); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg); cursor: pointer;
+}
+.color-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.color-swatch {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { border-color: var(--accent); }
+
+/* READER STAGE */
+#reader-stage {
+  flex: 1; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 110%, rgba(20,16,10,0.95) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 20%, rgba(93,202,165,0.018) 0%, transparent 50%),
+    linear-gradient(175deg, #111113 0%, #0e0e10 45%, #0c0c0e 100%);
+}
+
+/* subtle noise grain */
+#reader-stage::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+}
+
+/* BOOK CONTAINER */
+#book-container {
+  position: relative; z-index: 1;
+  display: flex; align-items: stretch;
+  transition: all 0.28s ease;
+}
+
+/* PAGE */
+.book-page {
+  position: relative; background: var(--page-bg);
+  overflow: hidden; flex-shrink: 0;
+}
+
+/* paper line texture */
+.book-page .page-texture {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(255,255,255,0.011) 27px, rgba(255,255,255,0.011) 28px);
+}
+
+/* single page shadows */
+.book-page.single-page {
+  border-radius: 3px 5px 5px 3px;
+  box-shadow:
+    -8px 0 20px rgba(0,0,0,0.55),
+    8px 0 28px rgba(0,0,0,0.45),
+    0 10px 50px rgba(0,0,0,0.7),
+    0 2px 8px rgba(0,0,0,0.4);
+}
+/* left binding shadow on single/left page */
+.book-page.single-page .binding-shadow,
+.book-page.left-page .binding-shadow {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 36px;
+  background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.18) 55%, transparent 100%);
+  pointer-events: none; z-index: 3;
+}
+/* right edge shadow on single page */
+.book-page.single-page .edge-shadow {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 18px;
+  background: linear-gradient(to left, rgba(0,0,0,0.32) 0%, transparent 100%);
+  pointer-events: none; z-index: 3;
+}
+/* right page edge */
+.book-page.right-page .edge-shadow {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 18px;
+  background: linear-gradient(to left, rgba(0,0,0,0.3) 0%, transparent 100%);
+  pointer-events: none; z-index: 3;
+}
+/* book open shadows */
+.book-open .book-page.left-page {
+  border-radius: 3px 0 0 3px;
+  box-shadow: -10px 0 32px rgba(0,0,0,0.6), -2px 0 6px rgba(0,0,0,0.35);
+}
+.book-open .book-page.right-page {
+  border-radius: 0 3px 3px 0;
+  box-shadow: 10px 0 32px rgba(0,0,0,0.6), 2px 0 6px rgba(0,0,0,0.35);
+}
+/* center gutter shadow for book */
+.book-open .book-page.right-page .gutter-shadow {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 28px;
+  background: linear-gradient(to right, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+  pointer-events: none; z-index: 3;
+}
+
+/* SPINE */
+#book-spine {
+  width: 16px; flex-shrink: 0; display: none;
+  background: linear-gradient(to right, #090909 0%, #1c1c22 35%, #252530 50%, #1c1c22 65%, #090909 100%);
+  box-shadow: 0 0 14px rgba(0,0,0,0.9);
+}
+
+/* PAGE INNER */
+.page-inner {
+  position: relative; z-index: 1;
+  padding: 32px 28px 44px;
+  height: 100%; overflow: hidden;
+}
+.page-number {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: rgba(255,255,255,0.18);
+  font-family: var(--mono); letter-spacing: 0.5px; white-space: nowrap;
+}
+.right-page .page-number { left: auto; right: 50%; transform: translateX(50%); }
+
+#single-scroll {
+  overflow-y: auto; scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.07) transparent;
+}
+#single-scroll::-webkit-scrollbar { width: 3px; }
+#single-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+/* TYPOGRAPHY */
+.reader-text {
+  font-family: var(--reader-font);
+  font-size: var(--reader-size);
+  font-weight: var(--reader-weight);
+  line-height: var(--reader-lh);
+  color: var(--page-text);
+}
+.reader-text h1 { font-size: 1.85em; font-weight: 600; color: #f0ede6; margin: 0 0 0.55em; line-height: 1.2; letter-spacing: -0.02em; border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 0.45em; break-after: avoid; }
+.reader-text h2 { font-size: 1.3em; font-weight: 600; color: #dedad3; margin: 1.6em 0 0.5em; letter-spacing: -0.01em; break-after: avoid; }
+.reader-text h3 { font-size: 1em; font-weight: 500; color: var(--accent); margin: 1.3em 0 0.4em; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Source Sans 3', sans-serif; break-after: avoid; }
+.reader-text h4 { font-size: 1em; font-weight: 500; color: var(--text2); margin: 1.1em 0 0.3em; }
+.reader-text p { margin: 0 0 0.75em; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+.reader-text p + p { text-indent: 1.3em; margin-top: -0.1em; }
+.reader-text h1+p, .reader-text h2+p, .reader-text h3+p, .reader-text h4+p { text-indent: 0; }
+.reader-text strong { color: #f2efe8; font-weight: 600; }
+.reader-text em { color: #c5d8d0; font-style: italic; }
+.reader-text a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(93,202,165,0.3); }
+.reader-text blockquote { margin: 1em 0; padding: 0.9em 1.1em; border-left: 3px solid var(--accent-dark); background: rgba(29,158,117,0.06); border-radius: 0 5px 5px 0; color: var(--text2); font-style: italic; break-inside: avoid; }
+.reader-text code { font-family: var(--mono); font-size: 0.8em; background: rgba(255,255,255,0.07); border: 1px solid var(--border2); border-radius: 3px; padding: 1px 5px; color: var(--amber); }
+.reader-text pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 0.9em 1.1em; overflow-x: auto; margin: 1em 0; break-inside: avoid; }
+.reader-text pre code { background: none; border: none; padding: 0; font-size: 0.84em; color: #9FE1CB; }
+.reader-text ul, .reader-text ol { margin: 0.4em 0 0.9em 1.3em; }
+.reader-text li { margin-bottom: 0.25em; }
+.reader-text li::marker { color: var(--accent-dark); }
+.reader-text hr { border: none; height: 1px; background: rgba(255,255,255,0.07); margin: 1.8em 0; }
+.reader-text table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.88em; break-inside: avoid; }
+.reader-text th { background: var(--surface2); color: var(--accent); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border2); font-family: 'Source Sans 3', sans-serif; font-size: 0.83em; text-transform: uppercase; letter-spacing: 0.05em; }
+.reader-text td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.reader-text tr:last-child td { border-bottom: none; }
+.reader-text img { max-width: 100%; border-radius: 5px; margin: 0.8em 0; }
+
+/* PAGE TURN — 3D flip */
+#turn-overlay {
+  position: fixed; inset: 0; z-index: 500; pointer-events: none;
+  perspective: 2200px; perspective-origin: 50% 50%;
+}
+.turning-leaf {
+  position: absolute;
+  top: 0; height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.turning-leaf.go-forward {
+  transform-origin: left center;
+  animation: flipForward 0.52s cubic-bezier(0.42, 0, 0.28, 1.0) forwards;
+}
+.turning-leaf.go-backward {
+  transform-origin: right center;
+  animation: flipBackward 0.52s cubic-bezier(0.42, 0, 0.28, 1.0) forwards;
+}
+.leaf-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.leaf-face.front { background: var(--page-bg); }
+.leaf-face.back  { background: var(--page-bg); transform: rotateY(180deg); }
+
+/* shadow that intensifies at the fold */
+.leaf-face.front::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.08) 60%, rgba(0,0,0,0.45) 90%, rgba(0,0,0,0.65) 100%);
+}
+.leaf-face.back::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 60%, rgba(0,0,0,0.45) 90%, rgba(0,0,0,0.65) 100%);
+}
+
+@keyframes flipForward {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(-180deg); }
+}
+@keyframes flipBackward {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(180deg); }
+}
+
+/* NAV ARROWS */
+.nav-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.25); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: all 0.2s; z-index: 10;
+  user-select: none; font-family: inherit;
+}
+.nav-arrow:hover { background: var(--accent-dim); border-color: var(--accent-dark); color: var(--accent); }
+.nav-arrow.prev { left: 14px; }
+.nav-arrow.next { right: 14px; }
+.nav-arrow:disabled { opacity: 0.1; pointer-events: none; }
+
+/* DROP OVERLAY */
+#drop-overlay {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; color: var(--muted); gap: 12px; text-align: center;
+}
+#drop-overlay .big-icon { font-size: 38px; opacity: 0.3; }
+#drop-overlay h2 { font-size: 16px; font-weight: 400; color: var(--text2); }
+#drop-overlay p { font-size: 12px; }
+#book-container.drag-active .book-page { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ANNOTATION PANEL */
+#annot-panel {
+  width: 255px; background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  transition: width 0.22s ease, opacity 0.18s; overflow: hidden;
+}
+#annot-panel.hidden { width: 0; opacity: 0; }
+.annot-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.annot-title { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+.annot-save { padding: 3px 9px; font-size: 11px; border-radius: 4px; background: var(--accent-dim); border: 1px solid var(--accent-dark); color: var(--accent); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.annot-save:hover { background: var(--accent-dark); color: white; }
+#annot-textarea { flex: 1; background: transparent; border: none; outline: none; resize: none; color: var(--text2); font-family: var(--mono); font-size: 12px; line-height: 1.65; padding: 13px 14px; width: 100%; }
+#annot-textarea::placeholder { color: var(--surface3); }
+.annot-footer { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+/* PRESET PILLS */
+.preset-pills { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.preset-pill {
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text2); font-size: 12px;
+  cursor: pointer; transition: all 0.15s; text-align: left; font-family: inherit;
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.preset-pill:hover { border-color: var(--accent-dark); color: var(--text); }
+.preset-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.preset-pill small { font-size: 10px; color: var(--muted); margin-left: 6px; }
+
+/* SCROLL MODE */
+#reader-stage.scroll-mode { overflow-y: auto; align-items: flex-start; padding: 40px 0; }
+#reader-stage.scroll-mode #book-container { margin: 0 auto; }
+
+/* PROGRESS */
+#progress-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 2px; z-index: 300; }
+#progress-fill { height: 100%; width: 0%; background: var(--accent-dark); transition: width 0.18s; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* ─── MOBILE (iPhone 14 Plus: 430×932 pt) ─── */
+html { height: -webkit-fill-available; }
+body { min-height: -webkit-fill-available; }
+
+/* Topbar: 2 righe */
+#topbar {
+  height: auto; flex-wrap: wrap; padding: 0; gap: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.tb-row1 {
+  display: flex; align-items: center; width: 100%;
+  padding: 0 12px; height: 52px; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.tb-row2 {
+  display: flex; align-items: center; width: 100%;
+  padding: 6px 10px; gap: 6px;
+}
+.layout-pills { width: 100%; display: flex; gap: 6px; }
+.layout-pill  { flex: 1; padding: 8px 4px; font-size: 12px; text-align: center; min-height: 38px; }
+
+/* nasconde elementi desktop nel topbar originale */
+.tb-sep { display: none; }
+#wc-badge { font-size: 10px; }
+
+/* Icon btn più grandi per touch */
+.icon-btn { width: 44px; height: 44px; border-radius: 8px; }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* Nav arrows: più grandi, più vicine ai bordi */
+.nav-arrow { width: 44px; height: 44px; font-size: 18px; }
+.nav-arrow.prev { left: 4px; }
+.nav-arrow.next { right: 4px; }
+
+/* Settings: bottom sheet invece di pannello laterale */
+#settings-panel {
+  position: fixed !important;
+  bottom: 0; left: 0; right: 0;
+  width: 100% !important;
+  max-height: 70vh;
+  overflow-y: auto;
+  border-right: none;
+  border-top: 1px solid var(--border2);
+  border-radius: 18px 18px 0 0;
+  z-index: 300;
+  transform: translateY(0);
+  transition: transform 0.28s cubic-bezier(0.32,0,0.15,1), opacity 0.2s;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+#settings-panel.hidden {
+  width: 100% !important;
+  opacity: 1 !important;
+  transform: translateY(110%) !important;
+}
+/* handle drag indicator */
+#settings-panel::before {
+  content: '';
+  display: block;
+  width: 36px; height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 10px auto 4px;
+}
+
+/* Annot panel: bottom sheet */
+#annot-panel {
+  position: fixed !important;
+  bottom: 0; left: 0; right: 0;
+  width: 100% !important;
+  max-height: 65vh;
+  border-left: none;
+  border-top: 1px solid var(--border2);
+  border-radius: 18px 18px 0 0;
+  z-index: 300;
+  transform: translateY(0);
+  transition: transform 0.28s cubic-bezier(0.32,0,0.15,1), opacity 0.2s;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+#annot-panel.hidden {
+  width: 100% !important;
+  opacity: 1 !important;
+  transform: translateY(110%) !important;
+}
+#annot-panel::before {
+  content: '';
+  display: block;
+  width: 36px; height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+}
+#annot-textarea { min-height: 180px; }
+
+/* Backdrop semitrasparente quando panel aperto */
+#mobile-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 299;
+  background: rgba(0,0,0,0.45);
+}
+#mobile-backdrop.visible { display: block; }
+
+/* Stage: padding per progress bar e safe area */
+#reader-stage {
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Open btn più grande */
+#open-btn { height: 36px; padding: 0 16px; font-size: 13px; }
+
+/* Colori swatches più grandi */
+.color-swatch { width: 30px; height: 30px; }
+
+/* Settings layout a 2 colonne per font pills */
+.font-pills { flex-direction: row; flex-wrap: wrap; }
+.font-pill { flex: 1 1 48%; }
+
+/* Word count sotto titolo invece che inline */
+#file-title { font-size: 11px; }
+
+/* progress bar */
+#progress-bar { bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Swipe hint nascosto su mobile */
+.book-page.single-page { user-select: none; -webkit-user-select: none; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <!-- Riga 1: logo, titolo, azioni -->
+  <div class="tb-row1">
+    <div class="tb-logo">MD</div>
+    <button id="open-btn" onclick="document.getElementById('file-input-hidden').click()">Apri</button>
+    <input type="file" id="file-input-hidden" accept=".md,.markdown,.txt">
+    <div style="flex:1;min-width:0;overflow:hidden">
+      <div id="file-title" style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">nessun file</div>
+      <div id="wc-badge" style="font-size:10px;color:var(--muted);font-family:var(--mono)"></div>
+    </div>
+    <button class="icon-btn" id="btn-theme" title="Tema" onclick="toggleTheme()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="icon-btn active" id="btn-settings" title="Impostazioni" onclick="togglePanel('settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-annot" title="Annotazioni" onclick="togglePanel('annot')">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  </div>
+  <!-- Riga 2: layout selector -->
+  <div class="tb-row2">
+    <div class="layout-pills">
+      <button class="layout-pill active" id="lp-single" onclick="setLayout('single')">Pagina</button>
+      <button class="layout-pill" id="lp-book" onclick="setLayout('book')" style="display:none">Libro</button>
+      <button class="layout-pill" id="lp-scroll" onclick="setLayout('scroll')">Scorri</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop per bottom sheets -->
+<div id="mobile-backdrop" onclick="closeAllPanels()"></div>
+
+<div id="main">
+  <!-- SETTINGS -->
+  <div id="settings-panel">
+    <div class="sp-section">
+      <div class="sp-label">Font</div>
+      <div class="font-pills">
+        <button class="font-pill active" data-font="'Lora',Georgia,serif" onclick="setFont(this)" style="font-family:'Lora',serif">Lora<small>Serif classico · narrativa</small></button>
+        <button class="font-pill" data-font="'Source Sans 3',sans-serif" onclick="setFont(this)" style="font-family:'Source Sans 3',sans-serif">Source Sans 3<small>Sans-serif · saggistica</small></button>
+        <button class="font-pill" data-font="Georgia,serif" onclick="setFont(this)" style="font-family:Georgia,serif">Georgia<small>Serif di sistema</small></button>
+        <button class="font-pill" data-font="'JetBrains Mono',monospace" onclick="setFont(this)" style="font-family:'JetBrains Mono',monospace">JetBrains Mono<small>Monospace · tecnico</small></button>
+      </div>
+    </div>
+    <div class="sp-section">
+      <div class="sp-label">Tipografia</div>
+      <div class="slider-row">
+        <div class="slider-meta"><span class="slider-name">Dimensione</span><span class="slider-val" id="val-size">17px</span></div>
+        <input type="range" min="13" max="26" value="17" step="1" oninput="setCSSVar('--reader-size',this.value+'px');document.getElementById('val-size').textContent=this.value+'px';scheduleRebuild()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-meta"><span class="slider-name">Peso</span><span class="slider-val" id="val-weight">400</span></div>
+        <input type="range" min="300" max="600" value="400" step="100" oninput="setCSSVar('--reader-weight',this.value);document.getElementById('val-weight').textContent=this.value;scheduleRebuild()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-meta"><span class="slider-name">Interlinea</span><span class="slider-val" id="val-lh">1.75</span></div>
+        <input type="range" min="1.2" max="2.4" value="1.75" step="0.05" oninput="setCSSVar('--reader-lh',this.value);document.getElementById('val-lh').textContent=parseFloat(this.value).toFixed(2);scheduleRebuild()">
+      </div>
+    </div>
+    <div class="sp-section">
+      <div class="sp-label">Formato pagina</div>
+      <div class="preset-pills" id="format-presets">
+        <button class="preset-pill" data-w="480" onclick="setPageFormat(this)">
+          Romanzo <small>14×21 cm</small>
+        </button>
+        <button class="preset-pill" data-w="560" onclick="setPageFormat(this)">
+          Trade Paperback <small>15×23 cm</small>
+        </button>
+        <button class="preset-pill active" data-w="640" onclick="setPageFormat(this)">
+          Saggio / Manuale <small>17×24 cm</small>
+        </button>
+        <button class="preset-pill" data-w="760" onclick="setPageFormat(this)">
+          Largo <small>personalizzato</small>
+        </button>
+      </div>
+      <div class="slider-row">
+        <div class="slider-meta"><span class="slider-name">Larghezza</span><span class="slider-val" id="val-pw">640px</span></div>
+        <input type="range" id="sl-pw" min="380" max="820" value="640" step="20"
+          oninput="onPageWidthSlider(this.value)">
+      </div>
+    </div>
+    <div class="sp-section">
+      <div class="sp-label">Colore testo</div>
+      <div class="color-row" id="text-colors">
+        <!-- dark mode swatches -->
+        <div class="color-swatch theme-dark active" data-color="#e8e4dc" onclick="setTextColor(this)" style="background:#e8e4dc" title="Avorio"></div>
+        <div class="color-swatch theme-dark" data-color="#f4f1ec" onclick="setTextColor(this)" style="background:#f4f1ec" title="Bianco caldo"></div>
+        <div class="color-swatch theme-dark" data-color="#c8ddd4" onclick="setTextColor(this)" style="background:#c8ddd4" title="Menta"></div>
+        <div class="color-swatch theme-dark" data-color="#d4cfc4" onclick="setTextColor(this)" style="background:#d4cfc4" title="Sabbia"></div>
+        <div class="color-swatch theme-dark" data-color="#a0a09a" onclick="setTextColor(this)" style="background:#a0a09a" title="Grigio"></div>
+        <!-- light mode swatches -->
+        <div class="color-swatch theme-light active" data-color="#1e1c18" onclick="setTextColor(this)" style="background:#1e1c18;display:none" title="Inchiostro"></div>
+        <div class="color-swatch theme-light" data-color="#2a3a30" onclick="setTextColor(this)" style="background:#2a3a30;display:none" title="Verde scuro"></div>
+        <div class="color-swatch theme-light" data-color="#3a3020" onclick="setTextColor(this)" style="background:#3a3020;display:none" title="Seppia"></div>
+        <div class="color-swatch theme-light" data-color="#1a2a3a" onclick="setTextColor(this)" style="background:#1a2a3a;display:none" title="Blu notte"></div>
+        <div class="color-swatch theme-light" data-color="#4a4840" onclick="setTextColor(this)" style="background:#4a4840;display:none" title="Grafite"></div>
+      </div>
+    </div>
+    <div class="sp-section">
+      <div class="sp-label">Sfondo pagina</div>
+      <div class="color-row" id="bg-colors">
+        <!-- dark mode swatches -->
+        <div class="color-swatch theme-dark active" data-color="#16161a" onclick="setPageBg(this)" style="background:#16161a" title="Nero carta"></div>
+        <div class="color-swatch theme-dark" data-color="#1a1812" onclick="setPageBg(this)" style="background:#1a1812" title="Seppia scuro"></div>
+        <div class="color-swatch theme-dark" data-color="#111820" onclick="setPageBg(this)" style="background:#111820" title="Notte blu"></div>
+        <div class="color-swatch theme-dark" data-color="#0f1a14" onclick="setPageBg(this)" style="background:#0f1a14" title="Foresta"></div>
+        <div class="color-swatch theme-dark" data-color="#1e1e1e" onclick="setPageBg(this)" style="background:#1e1e1e" title="Grafite"></div>
+        <!-- light mode swatches -->
+        <div class="color-swatch theme-light active" data-color="#faf8f3" onclick="setPageBg(this)" style="background:#faf8f3;display:none" title="Carta"></div>
+        <div class="color-swatch theme-light" data-color="#fdf6e3" onclick="setPageBg(this)" style="background:#fdf6e3;display:none" title="Avorio solare"></div>
+        <div class="color-swatch theme-light" data-color="#f0f4f0" onclick="setPageBg(this)" style="background:#f0f4f0;display:none" title="Lino verde"></div>
+        <div class="color-swatch theme-light" data-color="#eef2f8" onclick="setPageBg(this)" style="background:#eef2f8;display:none" title="Azzurro carta"></div>
+        <div class="color-swatch theme-light" data-color="#f5f0e8" onclick="setPageBg(this)" style="background:#f5f0e8;display:none" title="Pergamena"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE -->
+  <div id="reader-stage"
+    ondragover="event.preventDefault();document.getElementById('book-container').classList.add('drag-active')"
+    ondragleave="document.getElementById('book-container').classList.remove('drag-active')"
+    ondrop="handleDrop(event)">
+    <button class="nav-arrow prev" id="btn-prev" onclick="changePage(-1)" disabled>&#8592;</button>
+    <div id="book-container"></div>
+    <button class="nav-arrow next" id="btn-next" onclick="changePage(1)" disabled>&#8594;</button>
+  </div>
+
+  <!-- ANNOTATIONS -->
+  <div id="annot-panel" class="hidden">
+    <div class="annot-header">
+      <div class="annot-title">Annotazioni</div>
+      <button class="annot-save" onclick="saveAnnotations()">Scarica .md</button>
+    </div>
+    <textarea id="annot-textarea" placeholder="# Note&#10;&#10;Scrivi qui in Markdown...&#10;&#10;## Idee&#10;- &#10;&#10;## Domande&#10;- "></textarea>
+    <div class="annot-footer">Markdown · auto-salvato in sessione</div>
+  </div>
+</div>
+
+<div id="turn-overlay"></div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<script>
+marked.setOptions({ breaks: true, gfm: true });
+
+let pages = [];
+let cur = 0;
+let layout = 'single';
+let cachedHTML = '';
+let curFile = '';
+let animating = false;
+let rebuildTimer = null;
+let pageWidthOverride = 640; // default: Saggio
+let isLight = false;
+
+const stage = document.getElementById('reader-stage');
+const bc = document.getElementById('book-container');
+
+// FILE
+document.getElementById('file-input-hidden').addEventListener('change', e => { if(e.target.files[0]) readFile(e.target.files[0]); });
+
+function handleDrop(e) {
+  e.preventDefault();
+  bc.classList.remove('drag-active');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.match(/\.(md|markdown|txt)$/i)) readFile(f);
+}
+
+function ingest(md) {
+  let content = md;
+  if (md.startsWith('---')) {
+    const end = md.indexOf('---', 3);
+    if (end > 0) content = md.slice(end + 3).trim();
+  }
+  cachedHTML = marked.parse(content);
+  const words = content.replace(/[#*`_()\[\]>=-]/g,' ').split(/\s+/).filter(Boolean).length;
+  document.getElementById('wc-badge').textContent = `${words.toLocaleString('it')} parole · ~${Math.ceil(words/200)} min`;
+  rebuild();
+}
+
+function rebuild() {
+  pages = layout === 'scroll' ? [cachedHTML] : paginate(cachedHTML);
+  cur = 0;
+  render();
+  updateNav();
+  updateProgress();
+}
+
+function scheduleRebuild() {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => { if (cachedHTML) rebuild(); }, 200);
+}
+
+// PAGINATE — splits HTML into page-height chunks
+function paginate(html) {
+  const ph = getPageH() - 100;
+  const pw = getPageW() - 116;
+
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const nodes = Array.from(temp.children);
+
+  const m = document.createElement('div');
+  m.className = 'reader-text';
+  const cs = getComputedStyle(document.documentElement);
+  m.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;top:-9999px;left:-9999px;width:${pw}px;` +
+    `font-family:${cs.getPropertyValue('--reader-font')};` +
+    `font-size:${cs.getPropertyValue('--reader-size')};` +
+    `font-weight:${cs.getPropertyValue('--reader-weight')};` +
+    `line-height:${cs.getPropertyValue('--reader-lh')}`;
+  document.body.appendChild(m);
+
+  const result = [];
+  let bucket = '';
+  let bucketH = 0;
+
+  for (const node of nodes) {
+    const html = node.outerHTML;
+    m.innerHTML = html;
+    const h = m.offsetHeight + 20;
+    if (bucketH + h > ph && bucket !== '') {
+      result.push(bucket);
+      bucket = html; bucketH = h;
+    } else {
+      bucket += html; bucketH += h;
+    }
+  }
+  if (bucket) result.push(bucket);
+
+  document.body.removeChild(m);
+  return result.length ? result : [''];
+}
+
+function getPageH() { return Math.min(stage.offsetHeight - 40, 820); }
+function getPageW() {
+  if (layout === 'book') {
+    return Math.min((stage.offsetWidth - 60) / 2, pageWidthOverride);
+  }
+  // single: usa quasi tutta la larghezza su mobile
+  const avail = stage.offsetWidth - 24;
+  return Math.min(avail, pageWidthOverride);
+}
+
+// RENDER
+function render() {
+  if (!cachedHTML) { renderEmpty(); return; }
+  const h = getPageH(), w = getPageW();
+  if (layout === 'book') renderBook(h, w);
+  else if (layout === 'scroll') renderScroll(w);
+  else renderSingle(h, w);
+}
+
+function renderEmpty() {
+  bc.className = '';
+  bc.innerHTML = pageHTML('single-page', 560, 420, `
+    <div id="drop-overlay">
+      <div class="big-icon">📖</div>
+      <h2>Apri un file Markdown</h2>
+      <p>Trascina qui un .md oppure usa "Apri file"</p>
+    </div>`, '');
+}
+
+function pageHTML(cls, w, h, content, pageNum) {
+  return `<div class="book-page ${cls}" style="width:${w}px;height:${h}px">
+    <div class="page-texture"></div>
+    ${cls.includes('single') ? '<div class="binding-shadow"></div><div class="edge-shadow"></div>' : ''}
+    ${cls === 'left-page' ? '<div class="binding-shadow"></div>' : ''}
+    ${cls === 'right-page' ? '<div class="gutter-shadow"></div><div class="edge-shadow"></div>' : ''}
+    <div class="page-inner" style="height:${h}px">
+      ${content}
+      ${pageNum ? `<div class="page-number">${pageNum}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderSingle(h, w) {
+  const content = pages[cur] || '';
+  const inner = `<div id="single-scroll" style="height:${h-100}px;overflow-y:auto"><div class="reader-text">${content}</div></div>`;
+  bc.className = '';
+  bc.innerHTML = pageHTML('single-page', w, h, inner, `${cur+1} / ${pages.length}`);
+  document.getElementById('single-scroll')?.addEventListener('scroll', function() {
+    const pagePct = cur / Math.max(pages.length-1,1);
+    const scrollFrac = this.scrollTop / Math.max(this.scrollHeight - this.clientHeight, 1) / pages.length;
+    document.getElementById('progress-fill').style.width = ((pagePct + scrollFrac) * 100).toFixed(1) + '%';
+  });
+}
+
+function renderBook(h, w) {
+  const li = cur % 2 === 0 ? cur : cur - 1;
+  const ri = li + 1;
+  const lc = pages[li] || '';
+  const rc = pages[ri] || '';
+  const total = pages.length;
+  bc.className = 'book-open';
+  bc.innerHTML =
+    pageHTML('left-page', w, h, `<div class="reader-text">${lc}</div>`, `${li+1} / ${total}`) +
+    '<div id="book-spine"></div>' +
+    pageHTML('right-page', w, h, `<div class="reader-text">${rc}</div>`, ri < total ? `${ri+1} / ${total}` : '');
+  document.getElementById('book-spine').style.display = 'block';
+}
+
+function renderScroll(w) {
+  bc.className = '';
+  const all = pages.join('');
+  bc.innerHTML = `<div class="book-page single-page" style="width:${w}px;min-height:400px">
+    <div class="page-texture"></div>
+    <div class="binding-shadow"></div><div class="edge-shadow"></div>
+    <div class="page-inner" style="height:auto;padding-bottom:64px">
+      <div class="reader-text">${all}</div>
+    </div>
+  </div>`;
+}
+
+// PAGE TURN
+function changePage(dir) {
+  if (animating || !cachedHTML) return;
+  const step = layout === 'book' ? 2 : 1;
+  const next = cur + dir * step;
+  if (next < 0 || next >= pages.length) return;
+
+  if (layout === 'scroll') { cur = next; render(); updateNav(); updateProgress(); return; }
+
+  animating = true;
+  const overlay = document.getElementById('turn-overlay');
+  overlay.innerHTML = '';
+
+  // Get page rect
+  const rect = bc.getBoundingClientRect();
+  const leafW = layout === 'book' ? rect.width / 2 : rect.width;
+
+  const leaf = document.createElement('div');
+  leaf.className = 'turning-leaf ' + (dir > 0 ? 'go-forward' : 'go-backward');
+  leaf.style.cssText = `width:${leafW}px;top:${rect.top}px;height:${rect.height}px;` +
+    (dir > 0
+      ? `left:${rect.left + (layout === 'book' ? leafW : 0)}px`
+      : `left:${rect.left + (layout === 'book' ? 0 : 0)}px`
+    );
+
+  const front = document.createElement('div');
+  front.className = 'leaf-face front';
+  const back = document.createElement('div');
+  back.className = 'leaf-face back';
+
+  leaf.appendChild(front);
+  leaf.appendChild(back);
+  overlay.appendChild(leaf);
+
+  setTimeout(() => {
+    overlay.innerHTML = '';
+    animating = false;
+    cur = next;
+    render();
+    updateNav();
+    updateProgress();
+    savePosition();
+  }, 530);
+}
+
+function updateNav() {
+  const step = layout === 'book' ? 2 : 1;
+  const hidden = layout === 'scroll';
+  document.getElementById('btn-prev').disabled = cur === 0 || hidden;
+  document.getElementById('btn-next').disabled = cur + step >= pages.length || hidden;
+  document.getElementById('btn-prev').style.visibility = hidden ? 'hidden' : '';
+  document.getElementById('btn-next').style.visibility = hidden ? 'hidden' : '';
+}
+
+function updateProgress() {
+  const pct = pages.length <= 1 ? 100 : (cur / (pages.length - 1)) * 100;
+  document.getElementById('progress-fill').style.width = pct.toFixed(1) + '%';
+}
+
+// LAYOUT
+function setLayout(l) {
+  layout = l;
+  ['single','book','scroll'].forEach(x => document.getElementById('lp-'+x).classList.toggle('active', x===l));
+
+  if (l === 'scroll') {
+    stage.classList.add('scroll-mode');
+    stage.onscroll = function() {
+      const pct = stage.scrollTop / Math.max(stage.scrollHeight - stage.clientHeight, 1) * 100;
+      document.getElementById('progress-fill').style.width = pct.toFixed(1)+'%';
+    };
+  } else {
+    stage.classList.remove('scroll-mode');
+    stage.onscroll = null;
+  }
+
+  if (cachedHTML) { rebuild(); savePosition(); savePrefs(); }
+}
+
+// keyboard
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') changePage(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   changePage(-1);
+});
+
+// ── TOUCH GESTURES ──
+let touchStartX = 0, touchStartY = 0;
+stage.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+stage.addEventListener('touchend', e => {
+  if (layout === 'scroll') return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 48) {
+    changePage(dx < 0 ? 1 : -1);
+  }
+}, { passive: true });
+
+// swipe down su bottom sheets per chiuderli
+['settings-panel','annot-panel'].forEach(id => {
+  const el = document.getElementById(id);
+  let sy = 0;
+  el.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (e.changedTouches[0].clientY - sy > 60) closeAllPanels();
+  }, { passive: true });
+});
+
+// THEME
+// Default colors per theme
+const THEME_DEFAULTS = {
+  dark:  { pageBg: '#16161a', pageText: '#e8e4dc' },
+  light: { pageBg: '#faf8f3', pageText: '#1e1c18' },
+};
+
+function applyPageColors(bg, text) {
+  // Write on body.style so it overrides everything (higher than :root and body.light)
+  document.body.style.setProperty('--page-bg', bg);
+  document.body.style.setProperty('--page-text', text);
+  // Also sync the turn-overlay leaf color
+  const style = document.getElementById('leaf-color-style') || (() => {
+    const s = document.createElement('style');
+    s.id = 'leaf-color-style';
+    document.head.appendChild(s);
+    return s;
+  })();
+  style.textContent = `#turn-overlay .leaf-face { background: ${bg} !important; }`;
+}
+
+function toggleTheme() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('btn-theme').classList.toggle('active', isLight);
+
+  // swap swatch sets
+  document.querySelectorAll('.color-swatch.theme-dark').forEach(s => s.style.display = isLight ? 'none' : '');
+  document.querySelectorAll('.color-swatch.theme-light').forEach(s => s.style.display = isLight ? '' : 'none');
+
+  // apply the active swatch of the new theme, or defaults
+  const theme = isLight ? 'light' : 'dark';
+  const activeBg   = document.querySelector(`#bg-colors   .color-swatch.theme-${theme}.active`);
+  const activeText = document.querySelector(`#text-colors .color-swatch.theme-${theme}.active`);
+  const bg   = activeBg   ? activeBg.dataset.color   : THEME_DEFAULTS[theme].pageBg;
+  const text = activeText ? activeText.dataset.color : THEME_DEFAULTS[theme].pageText;
+  applyPageColors(bg, text);
+  savePrefs();
+}
+
+// PAGE FORMAT
+function setPageFormat(btn) {
+  document.querySelectorAll('#format-presets .preset-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const w = parseInt(btn.dataset.w);
+  pageWidthOverride = w;
+  document.getElementById('sl-pw').value = w;
+  document.getElementById('val-pw').textContent = w + 'px';
+  scheduleRebuild();
+  savePrefs();
+}
+
+function onPageWidthSlider(val) {
+  pageWidthOverride = parseInt(val);
+  document.getElementById('val-pw').textContent = val + 'px';
+  document.querySelectorAll('#format-presets .preset-pill').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.w) === pageWidthOverride);
+  });
+  scheduleRebuild();
+  savePrefs();
+}
+
+// SETTINGS
+function setCSSVar(p, v) { document.documentElement.style.setProperty(p, v); }
+
+function setFont(btn) {
+  document.querySelectorAll('.font-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  setCSSVar('--reader-font', btn.dataset.font);
+  scheduleRebuild();
+  savePrefs();
+}
+
+function setTextColor(el) {
+  const theme = isLight ? 'light' : 'dark';
+  document.querySelectorAll(`#text-colors .color-swatch.theme-${theme}`).forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  // get current bg to preserve it
+  const activeBg = document.querySelector(`#bg-colors .color-swatch.theme-${theme}.active`);
+  const bg = activeBg ? activeBg.dataset.color : THEME_DEFAULTS[theme].pageBg;
+  applyPageColors(bg, el.dataset.color);
+  savePrefs();
+}
+
+function setPageBg(el) {
+  const theme = isLight ? 'light' : 'dark';
+  document.querySelectorAll(`#bg-colors .color-swatch.theme-${theme}`).forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  // get current text color to preserve it
+  const activeText = document.querySelector(`#text-colors .color-swatch.theme-${theme}.active`);
+  const text = activeText ? activeText.dataset.color : THEME_DEFAULTS[theme].pageText;
+  applyPageColors(el.dataset.color, text);
+  savePrefs();
+}
+
+// ── COOKIE / PREFS PERSISTENCE ──
+// Saves reader prefs + last file name + page position to a cookie (cross-device
+// if served from same URL) AND localStorage (fallback for file:// protocol).
+// NOTE: the browser cannot reopen a local file automatically for security reasons,
+// so on reload we show a "Riapri [filename]" banner prompting the user to pick it again.
+
+function setCookie(name, val, days) {
+  const exp = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(val)};expires=${exp};path=/;SameSite=Lax`;
+}
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function setStore(k, v) {
+  setCookie(k, v, 180);
+  try { localStorage.setItem(k, v); } catch(e) {}
+}
+function getStore(k) {
+  // prefer cookie (works cross-device on same URL), fall back to localStorage
+  return getCookie(k) || (localStorage.getItem(k) ?? null);
+}
+
+function savePrefs() {
+  const prefs = {
+    theme: isLight ? 'light' : 'dark',
+    font: document.querySelector('.font-pill.active')?.dataset.font || '',
+    size: document.getElementById('val-size')?.textContent || '18px',
+    weight: document.getElementById('val-weight')?.textContent || '400',
+    lh: document.getElementById('val-lh')?.textContent || '1.75',
+    pageW: pageWidthOverride,
+    textColor: document.querySelector(`#text-colors .color-swatch.theme-${isLight?'light':'dark'}.active`)?.dataset.color || '',
+    pageBg: document.querySelector(`#bg-colors .color-swatch.theme-${isLight?'light':'dark'}.active`)?.dataset.color || '',
+  };
+  setStore('mdr:prefs', JSON.stringify(prefs));
+}
+
+function savePosition() {
+  if (!curFile) return;
+  setStore('mdr:lastfile', curFile);
+  setStore('mdr:lastpage', cur);
+  setStore('mdr:lastlayout', layout);
+}
+
+function loadPrefs() {
+  const raw = getStore('mdr:prefs');
+  if (!raw) {
+    // no prefs — apply defaults on body so :root doesn't block JS overrides
+    applyPageColors(THEME_DEFAULTS.dark.pageBg, THEME_DEFAULTS.dark.pageText);
+    return;
+  }
+  try {
+    const p = JSON.parse(raw);
+    // theme
+    if (p.theme === 'light' && !isLight) toggleTheme();
+    // font
+    if (p.font) {
+      const fp = [...document.querySelectorAll('.font-pill')].find(b => b.dataset.font === p.font);
+      if (fp) { document.querySelectorAll('.font-pill').forEach(b => b.classList.remove('active')); fp.classList.add('active'); setCSSVar('--reader-font', p.font); }
+    }
+    // size / weight / lh
+    if (p.size) { setCSSVar('--reader-size', p.size); const sl = document.querySelector('input[oninput*="reader-size"]'); if(sl){sl.value=parseInt(p.size);} document.getElementById('val-size').textContent = p.size; }
+    if (p.weight) { setCSSVar('--reader-weight', p.weight); const sl = document.querySelector('input[oninput*="reader-weight"]'); if(sl){sl.value=parseInt(p.weight);} document.getElementById('val-weight').textContent = p.weight; }
+    if (p.lh) { setCSSVar('--reader-lh', p.lh); const sl = document.querySelector('input[oninput*="reader-lh"]'); if(sl){sl.value=parseFloat(p.lh);} document.getElementById('val-lh').textContent = parseFloat(p.lh).toFixed(2); }
+    // page width
+    if (p.pageW) { pageWidthOverride = p.pageW; document.getElementById('sl-pw').value = p.pageW; document.getElementById('val-pw').textContent = p.pageW+'px'; document.querySelectorAll('#format-presets .preset-pill').forEach(b => b.classList.toggle('active', parseInt(b.dataset.w)===p.pageW)); }
+    // colors — apply after potential theme switch
+    const theme = isLight ? 'light' : 'dark';
+    const bg   = p.pageBg   || THEME_DEFAULTS[theme].pageBg;
+    const text = p.textColor || THEME_DEFAULTS[theme].pageText;
+    // sync swatches
+    if (p.textColor) { document.querySelectorAll(`#text-colors .color-swatch.theme-${theme}`).forEach(s=>s.classList.remove('active')); const sw=[...document.querySelectorAll(`#text-colors .color-swatch.theme-${theme}`)].find(s=>s.dataset.color===p.textColor); if(sw) sw.classList.add('active'); }
+    if (p.pageBg)   { document.querySelectorAll(`#bg-colors   .color-swatch.theme-${theme}`).forEach(s=>s.classList.remove('active')); const sw=[...document.querySelectorAll(`#bg-colors   .color-swatch.theme-${theme}`)].find(s=>s.dataset.color===p.pageBg);   if(sw) sw.classList.add('active'); }
+    applyPageColors(bg, text);
+  } catch(e) {}
+}
+
+function showResumeBanner() {
+  const lastFile = getStore('mdr:lastfile');
+  const lastPage = parseInt(getStore('mdr:lastpage') || '0');
+  const lastLayout = getStore('mdr:lastlayout') || 'single';
+  if (!lastFile) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'resume-banner';
+  banner.style.cssText = `position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:1000;
+    background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+    padding:12px 18px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.4);font-size:13px;white-space:nowrap;max-width:90vw;`;
+  banner.innerHTML = `
+    <span style="color:var(--muted)">Ultimo file:</span>
+    <span style="color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;max-width:200px">${lastFile}.md</span>
+    <button onclick="resumeFile(${lastPage},'${lastLayout}')" style="padding:5px 14px;border-radius:6px;background:var(--accent-dark);border:1px solid var(--accent);color:white;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">
+      Riapri e vai a pag. ${lastPage+1}
+    </button>
+    <button onclick="document.getElementById('resume-banner').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 2px">×</button>`;
+  document.body.appendChild(banner);
+}
+
+function resumeFile(page, savedLayout) {
+  document.getElementById('resume-banner')?.remove();
+  // trigger file picker — user must re-select the file (browser security)
+  const input = document.getElementById('file-input-hidden');
+  // store pending resume so readFile can apply it after load
+  window._pendingResume = { page, layout: savedLayout };
+  input.click();
+}
+
+// patch readFile to apply resume
+function readFile(file) {
+  curFile = file.name.replace(/\.(md|markdown|txt)$/i,'');
+  document.getElementById('file-title').textContent = file.name;
+  const r = new FileReader();
+  r.onload = e => {
+    ingest(e.target.result);
+    if (window._pendingResume) {
+      const { page, savedLayout } = window._pendingResume;
+      window._pendingResume = null;
+      setTimeout(() => {
+        if (savedLayout !== layout) setLayout(savedLayout);
+        cur = Math.min(page, pages.length - 1);
+        render(); updateNav(); updateProgress();
+      }, 150);
+    }
+    document.getElementById('resume-banner')?.remove();
+    savePosition();
+  };
+  r.readAsText(file,'UTF-8');
+  const saved = getStore('mdr:annot:' + curFile);
+  if (saved) document.getElementById('annot-textarea').value = saved;
+}
+
+// PANELS — mobile: bottom sheet + backdrop
+function closeAllPanels() {
+  const sp = document.getElementById('settings-panel');
+  const ap = document.getElementById('annot-panel');
+  const bd = document.getElementById('mobile-backdrop');
+  sp.classList.add('hidden');
+  ap.classList.add('hidden');
+  bd.classList.remove('visible');
+  document.getElementById('btn-settings').classList.remove('active');
+  document.getElementById('btn-annot').classList.remove('active');
+  setTimeout(() => { if (cachedHTML && layout !== 'scroll') rebuild(); }, 310);
+}
+
+function togglePanel(which) {
+  const p = document.getElementById(which === 'settings' ? 'settings-panel' : 'annot-panel');
+  const other = document.getElementById(which === 'settings' ? 'annot-panel' : 'settings-panel');
+  const bd = document.getElementById('mobile-backdrop');
+  const willOpen = p.classList.contains('hidden');
+  // chiudi l'altro
+  other.classList.add('hidden');
+  document.getElementById(which === 'settings' ? 'btn-annot' : 'btn-settings').classList.remove('active');
+  // toggle questo
+  p.classList.toggle('hidden', !willOpen);
+  document.getElementById('btn-' + which).classList.toggle('active', willOpen);
+  bd.classList.toggle('visible', willOpen);
+  if (!willOpen) setTimeout(() => { if (cachedHTML && layout !== 'scroll') rebuild(); }, 310);
+}
+
+// ANNOTATIONS
+document.getElementById('annot-textarea').addEventListener('input', function() {
+  if (curFile) localStorage.setItem('mdr:' + curFile, this.value);
+});
+function saveAnnotations() {
+  const txt = document.getElementById('annot-textarea').value;
+  if (!txt.trim()) return;
+  const b = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = (curFile||'note') + '-annotazioni.md';
+  a.click();
+}
+
+// RESIZE
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { if (cachedHTML && layout !== 'scroll') rebuild(); }, 280);
+});
+
+// INIT
+loadPrefs();
+// always ensure page colors are set on body (not :root) so JS can override them
+if (!getStore('mdr:prefs')) applyPageColors(THEME_DEFAULTS.dark.pageBg, THEME_DEFAULTS.dark.pageText);
+renderEmpty();
+showResumeBanner();
+</script>
+</body>
+</html>
