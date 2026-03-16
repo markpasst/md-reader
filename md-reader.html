@@ -636,11 +636,16 @@ function paginate(html) {
   let bucket = '';
   let bucketH = 0;
 
+  const BREAK_TAGS = new Set(['H1','H2','H3']);
+
   for (const node of nodes) {
     const html = node.outerHTML;
     m.innerHTML = html;
     const h = m.offsetHeight + 20;
-    if (bucketH + h > ph && bucket !== '') {
+
+    const forceBreak = BREAK_TAGS.has(node.tagName) && bucket !== '';
+
+    if (forceBreak || (bucketH + h > ph && bucket !== '')) {
       result.push(bucket);
       bucket = html; bucketH = h;
     } else {
